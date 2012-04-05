@@ -21,37 +21,37 @@ class Kohana_Pagination {
 	);
 
 	// Current page number
-	protected $current_page;
+	public $current_page;
 
 	// Total item count
-	protected $total_items;
+	public $total_items;
 
 	// How many items to show per page
-	protected $items_per_page;
+	public $items_per_page;
 
 	// Total page count
-	protected $total_pages;
+	public $total_pages;
 
 	// Item offset for the first item displayed on the current page
-	protected $current_first_item;
+	public $current_first_item;
 
 	// Item offset for the last item displayed on the current page
-	protected $current_last_item;
+	public $current_last_item;
 
 	// Previous page number; FALSE if the current page is the first one
-	protected $previous_page;
+	public $previous_page;
 
 	// Next page number; FALSE if the current page is the last one
-	protected $next_page;
+	public $next_page;
 
 	// First page number; FALSE if the current page is the first one
-	protected $first_page;
+	public $first_page;
 
 	// Last page number; FALSE if the current page is the last one
-	protected $last_page;
+	public $last_page;
 
 	// Query offset
-	protected $offset;
+	public $offset;
 
 	/**
 	 * Creates a new Pagination object.
