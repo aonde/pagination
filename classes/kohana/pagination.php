@@ -4,7 +4,7 @@
  *
  * @package    Kohana/Pagination
  * @category   Base
- * @author     Kohana Team
+ * @author     Kohana Team .
  * @copyright  (c) 2008-2009 Kohana Team
  * @license    http://kohanaphp.com/license.html
  */
@@ -94,7 +94,6 @@ class Kohana_Pagination {
 
 		// Assign default Route
 		$this->_route = $request->route();
-        
 		
 		// Assign default route params
 		$this->_route_params = $request->param();
@@ -218,7 +217,7 @@ class Kohana_Pagination {
 		{
 			$page = NULL;
 		}
-        
+
 		switch ($this->config['current_page']['source'])
 		{
 			case 'query_string':
@@ -229,7 +228,7 @@ class Kohana_Pagination {
 			case 'route':
 			
 				return URL::site($this->_route->uri(array_merge($this->_route_params, 
-					array($this->config['current_page']['key'] => $page))));
+					array($this->config['current_page']['key'] => $page))).$this->query());
 		}
 
 		return '#';
