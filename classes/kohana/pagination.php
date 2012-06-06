@@ -52,6 +52,15 @@ class Kohana_Pagination {
 
 	// Query offset
 	protected $offset;
+	
+	// Request object
+	protected $_request;
+	
+	// Route to use for URIs
+	protected $_route;
+	
+	// Parameters to use with Route to create URIs
+	protected $_route_params = array();
 
 	/**
 	 * Creates a new Pagination object.
@@ -59,9 +68,9 @@ class Kohana_Pagination {
 	 * @param   array  configuration
 	 * @return  Pagination
 	 */
-	public static function factory(array $config = array())
+	public static function factory(array $config = array(), Request $request = NULL)
 	{
-		return new Pagination($config);
+		return new Pagination($config, $request);
 	}
 
 	/**
@@ -70,11 +79,26 @@ class Kohana_Pagination {
 	 * @param   array  configuration
 	 * @return  void
 	 */
-	public function __construct(array $config = array())
+	public function __construct(array $config = array(), Request $request = NULL)
 	{
 		// Overwrite system defaults with application defaults
 		$this->config = $this->config_group() + $this->config;
+		
+		// Assing Request
+		if ($request === NULL)
+		{
+			$request = Request::current();
+		}
+		
+		$this->_request = $request;
 
+		// Assign default Route
+		$this->_route = $request->route();
+        
+		
+		// Assign default route params
+		$this->_route_params = $request->param();
+		
 		// Pagination setup
 		$this->setup($config);
 	}
@@ -89,7 +113,7 @@ class Kohana_Pagination {
 	public function config_group($group = 'default')
 	{
 		// Load the pagination config file
-		$config_file = Kohana::config('pagination');
+		$config_file = Kohana::$config->load('pagination');
 
 		// Initialize the $config array
 		$config['group'] = (string) $group;
@@ -144,16 +168,18 @@ class Kohana_Pagination {
 			}
 			else
 			{
+				$query_key = $this->config['current_page']['key'];
+						
 				switch ($this->config['current_page']['source'])
 				{
 					case 'query_string':
-						$this->current_page = isset($_GET[$this->config['current_page']['key']])
-							? (int) $_GET[$this->config['current_page']['key']]
+						$this->current_page = ($this->_request->query($query_key) !== NULL)
+							? (int) $this->_request->query($query_key)
 							: 1;
 						break;
 
 					case 'route':
-						$this->current_page = (int) Request::current()->param($this->config['current_page']['key'], 1);
+						$this->current_page = (int) $this->_request->param($query_key, 1);
 						break;
 				}
 			}
@@ -192,14 +218,18 @@ class Kohana_Pagination {
 		{
 			$page = NULL;
 		}
-
+        
 		switch ($this->config['current_page']['source'])
 		{
 			case 'query_string':
-				return URL::site(Request::current()->uri()).URL::query(array($this->config['current_page']['key'] => $page));
+			
+				return URL::site($this->_route->uri($this->_route_params).
+					$this->query(array($this->config['current_page']['key'] => $page)));
 
 			case 'route':
-				return URL::site(Request::current()->uri(array($this->config['current_page']['key'] => $page))).URL::query();
+			
+				return URL::site($this->_route->uri(array_merge($this->_route_params, 
+					array($this->config['current_page']['key'] => $page))));
 		}
 
 		return '#';
@@ -247,6 +277,90 @@ class Kohana_Pagination {
 
 		// Pass on the whole Pagination object
 		return $view->set(get_object_vars($this))->set('page', $this)->render();
+	}
+	
+	
+	/**
+	 * Request setter / getter
+	 * 
+	 * @param	Request
+	 * @return	Request	If used as getter
+	 * @return	$this	Chainable as setter
+	 */
+	public function request(Request $request = NULL)
+	{
+		if ($request === NULL)
+			return $this->_request;
+			
+		$this->_request = $request;
+		
+		return $this;
+	}
+	
+	/**
+	 * Route setter / getter
+	 * 
+	 * @param	Route
+	 * @return	Route	Route if used as getter
+	 * @return	$this	Chainable as setter
+	 */
+	public function route(Route $route = NULL)
+	{
+		if ($route === NULL)
+			return $this->_route;
+			
+		$this->_route = $route;
+		
+		return $this;
+	}
+	
+	/**
+	 * Route parameters setter / getter
+	 * 
+	 * @param	array	Route parameters to set
+	 * @return	array	Route parameters if used as getter
+	 * @return	$this	Chainable as setter
+	 */
+	public function route_params(array $route_params = NULL)
+	{
+		if ($route_params === NULL)
+			return $this->_route_params;
+			
+		$this->_route_params = $route_params;
+		
+		return $this;
+	}
+	
+	/**
+	 * URL::query() replacement for Pagination use only
+	 * 
+	 * @param	array	Parameters to override
+	 * @return	string
+	 */
+	public function query(array $params = NULL)
+	{
+		if ($params === NULL)
+		{
+			// Use only the current parameters
+			$params = $this->_request->query();
+		}
+		else
+		{
+			// Merge the current and new parameters
+			$params = array_merge($this->_request->query(), $params);
+		}
+		
+		if (empty($params))
+		{
+			// No query parameters
+			return '';
+		}
+		
+		// Note: http_build_query returns an empty string for a params array with only NULL values
+		$query = http_build_query($params, '', '&');
+		
+		// Don't prepend '?' to an empty string
+		return ($query === '') ? '' : ('?'.$query);
 	}
 
 	/**
